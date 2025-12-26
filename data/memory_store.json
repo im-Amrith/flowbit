@@ -1,0 +1,22 @@
+[
+  {
+    "id": "1766762281019",
+    "vendorName": "Supplier GmbH",
+    "memoryType": "field-mapping",
+    "key": "Leistungsdatum",
+    "value": "serviceDate",
+    "confidence": 0.5,
+    "lastUsed": "2025-12-26T15:18:01.019Z",
+    "usageCount": 1
+  },
+  {
+    "id": "1766762499681",
+    "vendorName": "Parts AG",
+    "memoryType": "correction-pattern",
+    "key": "vat-inclusive",
+    "value": true,
+    "confidence": 0.5,
+    "lastUsed": "2025-12-26T15:21:39.681Z",
+    "usageCount": 1
+  }
+]
