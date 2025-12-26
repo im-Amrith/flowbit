@@ -1,7 +1,3 @@
-Here is the fully detailed `README.md` file for your project. It includes setup instructions, architectural explanations, and a specific **Test Case Guide** that you can use during your demo recording to prove every requirement is met.
-
-Create a file named `README.md` in the root of your project and paste this content:
-
 ```markdown
 # Flowbit AI Agent: Memory-Augmented Invoice Processor
 
