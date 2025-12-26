@@ -16,20 +16,23 @@ interface InvoiceFields {
 }
 
 interface Invoice {
-  invoiceId: string; // New ID field
-  vendor: string;    // New Vendor field
+  invoiceId: string;
+  vendor: string;
   fields: InvoiceFields;
   rawText: string;
 }
 
 interface ProcessResult {
   requiresHumanReview: boolean;
+  isDuplicate?: boolean;
   confidenceScore: number;
   reasoning: string;
   proposedCorrections: string[];
+  auditTrail: { step: string; timestamp: string; details: string }[];
+  memoryUpdates: string[];
+  appliedMemoryIds: string[];
 }
 
-// ... Icons (Keep existing icons) ...
 const FileTextIcon = ({ className }: { className?: string }) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
       <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
@@ -58,6 +61,13 @@ const FileTextIcon = ({ className }: { className?: string }) => (
     </svg>
   );
 
+  const BrainIcon = ({ className }: { className?: string }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-2.54Z"/>
+      <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-2.54Z"/>
+    </svg>
+  );
+
 function App() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
@@ -65,7 +75,6 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [memories, setMemories] = useState<any[]>([]);
 
-  // Teach Form State
   const [correctionKey, setCorrectionKey] = useState('');
   const [correctionValue, setCorrectionValue] = useState('');
 
@@ -113,12 +122,25 @@ function App() {
     const val = correctionKey === 'vat-inclusive' ? true : correctionValue;
 
     await axios.post('http://localhost:3001/api/learn', {
-      vendorName: selectedInvoice.vendor, // Use .vendor
+      vendorName: selectedInvoice.vendor,
       type, key: correctionKey, value: val
     });
 
     alert("Memory Updated!");
     fetchMemories();
+    processInvoice(selectedInvoice); 
+  };
+
+  const handleResolve = async (status: 'approved' | 'rejected') => {
+    if (!selectedInvoice || !result) return;
+    await axios.post(`http://localhost:3001/api/resolve/${selectedInvoice.invoiceId}`, {
+      vendorName: selectedInvoice.vendor,
+      status,
+      appliedMemoryIds: result.appliedMemoryIds
+    });
+    
+    // Refresh memories and re-process the invoice to show the updated confidence score
+    await fetchMemories();
     processInvoice(selectedInvoice); 
   };
 
@@ -134,19 +156,17 @@ function App() {
   return (
     <div className="flex h-screen bg-[#F9FAFB] font-sans text-slate-800 overflow-hidden">
       
-      {/* --- SIDEBAR --- */}
       <aside className="w-80 bg-white border-r border-gray-200 flex flex-col shadow-sm z-10">
         <div className="p-6 pb-4">
           <h1 className="text-xl font-bold tracking-tight text-gray-900">Invoices</h1>
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 space-y-3 pb-4">
-          {/* Updated Sidebar Map with Index Fallback */}
-          {invoices.map((inv, index) => { // <--- Added 'index' here
+          {invoices.map((inv, index) => { 
             const isSelected = selectedInvoice?.invoiceId === inv.invoiceId;
             return (
               <div 
-                key={inv.invoiceId || index} // <--- Fallback to index if ID is missing
+                key={inv.invoiceId || index} 
                 onClick={() => processInvoice(inv)}
                 className={`
                   cursor-pointer p-4 rounded-xl border transition-all duration-200 group
@@ -185,7 +205,6 @@ function App() {
         </div>
       </aside>
 
-      {/* --- MAIN CONTENT --- */}
       <main className="flex-1 flex flex-col relative">
         <header className="h-16 bg-white border-b border-gray-200 flex items-center px-8 shadow-sm z-[5]">
            <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide">Invoice Details</h2>
@@ -210,7 +229,7 @@ function App() {
           )}
 
           {result && !loading && selectedInvoice && (
-            <div className="max-w-4xl mx-auto space-y-6">
+            <div className="max-w-5xl mx-auto space-y-6">
               
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                  <div className="flex justify-between items-start">
@@ -259,7 +278,7 @@ function App() {
                   </div>
 
                   {result.proposedCorrections.length > 0 && (
-                    <div className="bg-white/80 p-4 rounded-lg border border-black/5">
+                    <div className="bg-white/80 p-4 rounded-lg border border-black/5 mb-4">
                       <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500 mb-2">Applied Corrections</h3>
                       <ul className="space-y-1">
                         {result.proposedCorrections.map((c, i) => (
@@ -270,58 +289,120 @@ function App() {
                       </ul>
                     </div>
                   )}
+
+                  {/* Audit Trail */}
+                  <div className="bg-white/40 p-4 rounded-lg border border-black/5">
+                    <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500 mb-2">Audit Trail</h3>
+                    <div className="space-y-2">
+                      {result.auditTrail.map((step, i) => (
+                        <div key={i} className="flex gap-3 text-xs">
+                          <span className="text-gray-400 font-mono w-20 shrink-0">{step.step.toUpperCase()}</span>
+                          <span className="text-gray-600">{step.details}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
-                {result.requiresHumanReview ? (
+                <div className="space-y-6">
                   <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 h-fit">
-                    <h3 className="font-bold text-gray-900 mb-1">🎓 Teach the AI</h3>
-                    <p className="text-xs text-gray-500 mb-4">Create a rule to fix this vendor's issues.</p>
-                    
-                    <div className="space-y-3">
-                      <div>
-                        <label className="text-xs font-medium text-gray-700 block mb-1">Pattern Key</label>
-                        <input 
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" 
-                          placeholder="e.g. Leistungsdatum"
-                          value={correctionKey}
-                          onChange={e => setCorrectionKey(e.target.value)} 
-                        />
+                    {result.requiresHumanReview ? (
+                      <>
+                        {!result.isDuplicate ? (
+                          <>
+                            <h3 className="font-bold text-gray-900 mb-1">🎓 Teach the AI</h3>
+                            <p className="text-xs text-gray-500 mb-4">Create a rule to fix this vendor's issues.</p>
+                            
+                            <div className="space-y-3">
+                              <div>
+                                <label className="text-xs font-medium text-gray-700 block mb-1">Pattern Key</label>
+                                <input 
+                                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" 
+                                  placeholder="e.g. Leistungsdatum"
+                                  value={correctionKey}
+                                  onChange={e => setCorrectionKey(e.target.value)} 
+                                />
+                              </div>
+                              <div>
+                                <label className="text-xs font-medium text-gray-700 block mb-1">Correct Value</label>
+                                <input 
+                                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" 
+                                  placeholder="e.g. serviceDate"
+                                  value={correctionValue}
+                                  onChange={e => setCorrectionValue(e.target.value)} 
+                                />
+                              </div>
+                              <button 
+                                onClick={handleTeach}
+                                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg text-sm font-medium transition-colors"
+                              >
+                                Save Rule & Retry
+                              </button>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="text-center py-2">
+                            <div className="bg-red-100 text-red-700 text-xs font-bold px-2 py-1 rounded-full inline-block mb-2">Duplicate Detected</div>
+                            <p className="text-xs text-gray-500">Learning is disabled for duplicates to prevent contradictory memory.</p>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="text-center py-2">
+                        <div className="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-full inline-block mb-2">Verified by AI</div>
+                        <p className="text-xs text-gray-500">This invoice was auto-accepted. You can still confirm or reject the result to train the agent.</p>
                       </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-700 block mb-1">Correct Value</label>
-                        <input 
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" 
-                          placeholder="e.g. serviceDate"
-                          value={correctionValue}
-                          onChange={e => setCorrectionValue(e.target.value)} 
-                        />
-                      </div>
+                    )}
+
+                    <div className="mt-6 pt-6 border-t border-gray-100 flex gap-2">
                       <button 
-                        onClick={handleTeach}
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg text-sm transition-colors mt-2 shadow-sm"
+                        onClick={() => handleResolve('approved')}
+                        className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg text-sm font-medium transition-colors"
                       >
-                        Save Rule & Retry
+                        Approve
+                      </button>
+                      <button 
+                        onClick={() => handleResolve('rejected')}
+                        className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-lg text-sm font-medium transition-colors"
+                      >
+                        Reject
                       </button>
                     </div>
                   </div>
-                ) : (
-                   <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 h-fit">
-                      <h3 className="font-bold text-gray-900 mb-3">🧠 Active Memories</h3>
-                      {memories.filter(m => m.vendorName === selectedInvoice.vendor).length > 0 ? (
-                         <div className="space-y-2">
-                            {memories.filter(m => m.vendorName === selectedInvoice.vendor).map((m, i) => (
-                               <div key={i} className="text-xs bg-blue-50 text-blue-800 px-2 py-1.5 rounded border border-blue-100">
-                                  <span className="font-semibold">{m.key}</span> → {String(m.value)}
-                               </div>
-                            ))}
-                         </div>
-                      ) : (
-                         <p className="text-xs text-gray-400">No specific memories used.</p>
-                      )}
-                   </div>
-                )}
-              </div>
 
+                  {/* Memory Store Visualization */}
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 h-fit">
+                    <div className="flex items-center gap-2 mb-3">
+                      <BrainIcon className="w-5 h-5 text-purple-600" />
+                      <h3 className="font-bold text-gray-900">Long-Term Memory</h3>
+                    </div>
+                    <div className="space-y-3 max-h-64 overflow-y-auto pr-2">
+                      {memories.filter(m => m.vendorName === selectedInvoice.vendor).length === 0 && (
+                        <p className="text-xs text-gray-400 italic">No memories for this vendor yet.</p>
+                      )}
+                      {memories.filter(m => m.vendorName === selectedInvoice.vendor).map((m, i) => (
+                        <div key={i} className="text-xs p-2 bg-gray-50 rounded border border-gray-100">
+                          <div className="flex justify-between mb-1">
+                            <span className="font-bold text-gray-600">{m.key}</span>
+                            <span className="text-purple-600 font-mono">
+                              {m.memoryType === 'resolution-history' 
+                                ? `${(m.value * 100).toFixed(0)}% Risk` 
+                                : `${(m.confidence * 100).toFixed(0)}%`}
+                            </span>
+                          </div>
+                          <div className="text-gray-500 truncate">
+                            {m.memoryType === 'resolution-history' ? 'Historical Rejection Rate' : `Value: ${JSON.stringify(m.value)}`}
+                          </div>
+                          <div className="mt-1 flex gap-2 text-[10px] text-gray-400">
+                            <span>Used: {m.usageCount}</span>
+                            <span>Success: {m.successCount}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>

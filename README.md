@@ -11,7 +11,16 @@ This project is an intelligent **Invoice Processing Agent** designed to "learn" 
 - **Backend:** Node.js, Express, TypeScript
 - **Frontend:** React (Vite), TailwindCSS
 - **Persistence:** File-based JSON storage (`data/memory_store.json`)
-- **Logic:** Heuristic-based inference engine (No external ML APIs required)
+- **Logic:** Heuristic-based inference engine with Reinforcement Learning (Confidence scores + Decay + Dynamic Trust)
+
+## Key Features
+
+- **Long-Term Memory**: Remembers vendor-specific field mappings and correction patterns.
+- **Dynamic Trust Boost**: Automatically increases confidence for vendors with a long history of successful approvals.
+- **Proportional Reinforcement**: Confidence updates are weighted by existing memory strength to prevent over-correction.
+- **3-Way Matching**: Validates invoices against Purchase Orders and Delivery Notes.
+- **Real-time UI**: Instant visual feedback on confidence scores and reasoning when teaching or resolving invoices.
+- **Audit Trail**: Full transparency into every decision the AI makes.
 
 ## Setup & Installation
 
@@ -32,7 +41,6 @@ npm install
 cd frontend
 npm install
 cd ..
-
 ```
 
 ### 3. Running the Application
@@ -44,7 +52,6 @@ You need two terminals running simultaneously.
 ```bash
 npx ts-node src/server.ts
 # Runs on http://localhost:3001
-
 ```
 
 **Terminal 2 (Frontend UI):**
@@ -53,7 +60,6 @@ npx ts-node src/server.ts
 cd frontend
 npm run dev
 # Runs on http://localhost:5173
-
 ```
 
 ---
@@ -125,41 +131,69 @@ Use this guide to verify the agent's behavior. The system starts with **Zero Kno
 - **Reasoning:** "Possible Duplicate Submission Detected."
 - **Action:** **Do NOT teach.** This is a safety stop.
 
+### 📈 Scenario 7: The Trust Loop (Freight & Co)
+
+- **Goal:** Observe the AI "trusting" a vendor over time.
+- **Input:** Click `INV-C-004` (Freight & Co).
+- **Status:** ⚠️ Human Review Required (Confidence ~68%)
+- **Action:** Click **Approve**.
+- **Repeat:** Click `INV-C-004` again and click **Approve** 2 more times.
+- **Result:** ✅ Auto-Accepted (Confidence ~83%)
+- **Reasoning:** "Applied Vendor Trust Boost based on clean history."
+
 ---
+
+## Architecture: The Memory Layer
+
+The agent implements a **Reinforcement Learning** loop:
+
+1.  **Recall:** Scans `memory_store.json` for vendor-specific rules.
+2.  **Apply:** Executes corrections (Field Mapping, VAT Math, SKU Assignment).
+3.  **Decide:** Calculates a **Confidence Score**.
+    - **Base Score:** Starts at 0.75 (Neutral).
+    - **Trust Boost:** Vendors with >2 successful approvals and <10% rejection rate get a scaling boost (up to +0.25).
+    - **Threshold:** If Confidence > 80% AND no critical errors → **Auto-Accept**.
+4.  **Learn & Reinforce:**
+    - **Success:** Approving an invoice reinforces applied memories (+0.15 * current confidence).
+    - **Failure:** Rejecting an invoice penalizes applied memories (-0.30).
+    - **Decay:** Unused memories lose 1% confidence per day to prevent "stale" logic.
+
+## Output Contract (JSON)
+
+The agent returns a structured `ProcessingResult`:
+
+```json
+{
+  "invoiceId": "INV-A-001",
+  "status": "auto-accepted",
+  "confidence": 0.95,
+  "corrections": ["Extracted Service Date from 'Leistungsdatum'"],
+  "auditTrail": [
+    { "step": "Recall", "detail": "Found 2 learned patterns for Supplier GmbH" },
+    { "step": "Apply", "detail": "Mapped 'Leistungsdatum' to serviceDate" },
+    { "step": "Decide", "detail": "Confidence 95% exceeds threshold 80%" }
+  ],
+  "data": { ... }
+}
+```
 
 ## Project Structure
 
 ```
 ├── data/
-│   ├── invoices.json           # The Source of Truth (12 Invoices)
-│   ├── memory_store.json       # Where the AI saves learned rules
-│   └── purchase_orders.json    # Reference data for 3-way matching
+│   ├── invoices.json           # Mock invoice data
+│   ├── memory_store.json       # Persistent AI memory
+│   ├── purchase_order.json     # Reference POs
+│   └── delivery_notes.json     # Reference DNs
 ├── src/
-│   ├── server.ts               # Express API endpoints
-│   ├── InvoiceProcessor.ts     # The Brain: Recall/Apply/Decide Logic
-│   ├── MemoryManager.ts        # Handles reading/writing JSON memory
-│   └── types.ts                # TypeScript Interfaces
+│   ├── server.ts               # Express API
+│   ├── InvoiceProcessor.ts     # Core AI Logic (Recall/Apply/Decide)
+│   ├── MemoryManager.ts        # Memory Lifecycle (Learn/Reinforce/Decay)
+│   ├── types.ts                # Shared Interfaces
+│   └── index.ts                # CLI Demo Script
 └── frontend/
-    └── src/App.tsx             # The React Dashboard UI
-
+    └── src/App.tsx             # React Dashboard
 ```
-
-## Logic Explanation
-
-1. **Recall:** When an invoice arrives, the `MemoryManager` scans `memory_store.json` for rules matching the vendor.
-2. **Apply:**
-
-- **Field Mapping:** If a key (e.g., "Leistungsdatum") is found in the text, map its value to the target field.
-- **Corrections:** If a flag (e.g., "vat-inclusive") is active, execute specific math logic.
-
-3. **Decide:**
-
-- The `InvoiceProcessor` calculates a **Confidence Score**.
-- It checks against **Heuristics** (duplicates, missing fields).
-- If Confidence > 80% AND no critical errors → **Auto-Accept**.
-- Otherwise → **Request Human Review**.
-
-4. **Learn:** When the user fills the "Teach" form, the rule is saved to `memory_store.json` to be recalled next time.
 
 ```
 

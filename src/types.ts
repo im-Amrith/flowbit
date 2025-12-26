@@ -1,4 +1,3 @@
-// 1. INPUT: The structure of an Invoice (based on provided sample data)
 export interface LineItem {
     sku?: string | null;
     description: string;
@@ -20,15 +19,14 @@ export interface InvoiceFields {
 }
 
 export interface Invoice {
-    invoiceId: string; // Changed from id
-    vendor: string;    // Changed from vendorName
+    invoiceId: string;
+    vendor: string;
     fields: InvoiceFields;
     confidence: number;
     rawText: string;
 }
 
-// 2. MEMORY: How we store learned patterns
-export type MemoryType = 'vendor-preference' | 'correction-pattern' | 'field-mapping';
+export type MemoryType = 'vendor-preference' | 'correction-pattern' | 'field-mapping' | 'resolution-history';
 
 export interface MemoryEntry {
     id: string;
@@ -39,9 +37,10 @@ export interface MemoryEntry {
     confidence: number;
     lastUsed: string;
     usageCount: number;
+    successCount: number;
+    failureCount: number;
 }
 
-// 3. OUTPUT: The exact JSON structure required by Flowbit
 export interface AuditStep {
     step: 'recall' | 'apply' | 'decide' | 'learn';
     timestamp: string;
@@ -53,8 +52,25 @@ export interface ProcessingResult {
     normalizedInvoice: Record<string, any>;
     proposedCorrections: string[];
     requiresHumanReview: boolean;
+    isDuplicate?: boolean;
     reasoning: string;
     confidenceScore: number;
     memoryUpdates: string[];
+    appliedMemoryIds: string[];
     auditTrail: AuditStep[];
+}
+
+export interface PurchaseOrder {
+    poNumber: string;
+    vendor: string;
+    date: string;
+    lineItems: { sku: string; qty: number; unitPrice: number }[];
+}
+
+export interface DeliveryNote {
+    dnNumber: string;
+    vendor: string;
+    poNumber: string;
+    date: string;
+    lineItems: { sku: string; qtyDelivered: number }[];
 }

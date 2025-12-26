@@ -26,9 +26,8 @@ async function runDemo() {
     // Reset
     memory.reset(); 
     console.log("Memory cleared to simulate fresh install.\n");
-    await wait(1000); // Wait 1 second
+    await wait(1000);
 
-    // --- SCENARIO 1 ---
     printSection("SCENARIO 1: Vendor 'Supplier GmbH'");
     await wait(1000);
     
@@ -38,13 +37,13 @@ async function runDemo() {
     console.log(`Reasoning: ${result1.reasoning}`);
     console.log(`Confidence: ${result1.confidenceScore}`);
     
-    await wait(2000); // Pause to let viewer read
+    await wait(2000);
     
     if (result1.requiresHumanReview) {
         console.log("\n[HUMAN INTERVENTION] User noticed 'Leistungsdatum' means Service Date.");
         console.log(">>> TEACHING MEMORY...");
         memory.learn("Supplier GmbH", "field-mapping", "Leistungsdatum", "serviceDate");
-        await wait(1500); // Simulate saving to DB
+        await wait(1500);
     }
 
     console.log("\n>>> Processing INV-A-002 (Same vendor, later date)...");
@@ -56,7 +55,6 @@ async function runDemo() {
     
     await wait(2000);
 
-    // --- SCENARIO 2 ---
     printSection("SCENARIO 2: Vendor 'Parts AG'");
     await wait(1000);
     
@@ -80,7 +78,6 @@ async function runDemo() {
 
     await wait(2000);
 
-    // --- SCENARIO 3 ---
     printSection("SCENARIO 3: Vendor 'Freight & Co'");
     await wait(1000);
 
@@ -97,5 +94,4 @@ async function runDemo() {
     printSection("DEMO COMPLETE");
 }
 
-// Add this at the very bottom of src/index.ts
 runDemo().catch(console.error);
