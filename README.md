@@ -1,4 +1,3 @@
-```markdown
 # Flowbit AI Agent: Memory-Augmented Invoice Processor
 
 ## 📋 Project Overview
@@ -12,7 +11,6 @@ This project is an intelligent **Invoice Processing Agent** designed to "learn" 
 * **Persistence:** File-based JSON storage (`data/memory_store.json`)
 * **Logic:** Heuristic-based inference engine (No external ML APIs required)
 
----
 
 ## 🚀 Setup & Installation
 
