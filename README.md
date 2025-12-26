@@ -54,104 +54,65 @@ npm run dev
 ```
 
 ---
-Test Case Guide (Demo Script)
-Use this guide to verify the agent's behavior. The system starts with Zero Knowledge and learns as you teach it.
+## 🧪 Test Case Guide (Demo Script)
+Use this guide to verify the agent's behavior. The system starts with **Zero Knowledge** and learns as you teach it.
 
-🔴 Scenario 1: Date Field Mapping (Supplier GmbH)
-Goal: Teach the AI that "Leistungsdatum" means "Service Date".
+### 🔴 Scenario 1: Date Field Mapping (Supplier GmbH)
+*   **Goal:** Teach the AI that "Leistungsdatum" means "Service Date".
+*   **Input:** Click `INV-A-001` (Supplier GmbH).
+*   **Status:** ⚠️ Human Review Required
+*   **Reasoning:** "Found 'Leistungsdatum' but don't know how to map it yet."
+*   **Teach:** In the "Teach the AI" form, enter:
+    *   **Pattern Key:** `Leistungsdatum`
+    *   **Correct Value:** `serviceDate`
+*   **Action:** Click **Save Rule & Retry**.
+*   **Result:** ✅ Auto-Accepted (Correction: "Extracted Service Date...")
+*   **Verify:** Click `INV-A-002` (Same Vendor).
+    *   **Status:** ✅ Auto-Accepted (Immediate)
+    *   **Reasoning:** "Applied 1 learned patterns."
 
-Input: Click INV-A-001 (Supplier GmbH).
+### 🔴 Scenario 2: VAT Recalculation (Parts AG)
+*   **Goal:** Teach the AI to fix "VAT Inclusive" totals.
+*   **Input:** Click `INV-B-001` (Parts AG).
+*   **Status:** ⚠️ Human Review Required
+*   **Reasoning:** "Detected VAT-inclusive language but math indicates Gross was treated as Net."
+*   **Teach:** In the "Teach the AI" form, enter:
+    *   **Pattern Key:** `vat-inclusive`
+    *   **Correct Value:** `true`
+*   **Action:** Click **Save Rule & Retry**.
+*   **Result:** ✅ Auto-Accepted (Correction: "Recalculated Net: 2000 / Tax: 400")
 
-Status: ⚠️ Human Review Required
+### 🟢 Scenario 3: Auto-Heuristic PO Match (Supplier GmbH)
+*   **Goal:** Verify the AI infers PO numbers from context.
+*   **Input:** Click `INV-A-003` (Supplier GmbH).
+*   **Status:** ✅ Auto-Accepted
+*   **Correction:** "Auto-matched PO-A-051 based on item 'Widget Pro'"
+*   **Note:** This logic is pre-programmed as a heuristic.
 
-Reasoning: "Found 'Leistungsdatum' but don't know how to map it yet."
+### 🟢 Scenario 4: Missing Currency Recovery (Parts AG)
+*   **Goal:** Verify the AI recovers missing currency symbols.
+*   **Input:** Click `INV-B-003` (Parts AG).
+*   **Status:** ✅ Auto-Accepted
+*   **Correction:** "Recovered currency 'EUR' from raw text."
 
-Teach: In the "Teach the AI" form, enter:
+### 🟠 Scenario 5: SKU Assignment (Freight & Co)
+*   **Goal:** Teach the AI to map generic descriptions to specific SKUs.
+*   **Input:** Click `INV-C-002` (Freight & Co).
+*   **Status:** ⚠️ Human Review Required
+*   **Reasoning:** "Detected 'Seefracht' service but no SKU is assigned."
+*   **Teach:** In the "Teach the AI" form, enter:
+    *   **Pattern Key:** `Seefracht`
+    *   **Correct Value:** `SKU-FREIGHT`
+*   **Action:** Click **Save Rule & Retry**.
+*   **Result:** ✅ Auto-Accepted (Correction: "Assigned SKU-FREIGHT to line items.")
 
-Pattern Key: Leistungsdatum
-
-Correct Value: serviceDate
-
-Click Save Rule & Retry.
-
-Result: ✅ Auto-Accepted (Correction: "Extracted Service Date...")
-
-Verify: Click INV-A-002 (Same Vendor).
-
-Status: ✅ Auto-Accepted (Immediate)
-
-Reasoning: "Applied 1 learned patterns."
-
-🔴 Scenario 2: VAT Recalculation (Parts AG)
-Goal: Teach the AI to fix "VAT Inclusive" totals.
-
-Input: Click INV-B-001 (Parts AG).
-
-Status: ⚠️ Human Review Required
-
-Reasoning: "Detected VAT-inclusive language but math indicates Gross was treated as Net."
-
-Teach: In the "Teach the AI" form, enter:
-
-Pattern Key: vat-inclusive
-
-Correct Value: true
-
-Click Save Rule & Retry.
-
-Result: ✅ Auto-Accepted (Correction: "Recalculated Net: 2000 / Tax: 400")
-
-🟢 Scenario 3: Auto-Heuristic PO Match (Supplier GmbH)
-Goal: Verify the AI infers PO numbers from context.
-
-Input: Click INV-A-003 (Supplier GmbH).
-
-Status: ✅ Auto-Accepted
-
-Correction: "Auto-matched PO-A-051 based on item 'Widget Pro'"
-
-Note: This logic is pre-programmed as a heuristic.
-
-🟢 Scenario 4: Missing Currency Recovery (Parts AG)
-Goal: Verify the AI recovers missing currency symbols.
-
-Input: Click INV-B-003 (Parts AG).
-
-Status: ✅ Auto-Accepted
-
-Correction: "Recovered currency 'EUR' from raw text."
-
-🟠 Scenario 5: SKU Assignment (Freight & Co)
-Goal: Teach the AI to map generic descriptions to specific SKUs.
-
-Input: Click INV-C-002 (Freight & Co).
-
-Status: ⚠️ Human Review Required
-
-Reasoning: "Detected 'Seefracht' service but no SKU is assigned."
-
-Teach: In the "Teach the AI" form, enter:
-
-Pattern Key: Seefracht
-
-Correct Value: SKU-FREIGHT
-
-Click Save Rule & Retry.
-
-Result: ✅ Auto-Accepted (Correction: "Assigned SKU-FREIGHT to line items.")
-
-🛑 Scenario 6: Duplicate Detection (Safety Layer)
-Goal: Ensure the AI blocks duplicate submissions.
-
-Input: Click INV-B-004 (Parts AG).
-
-Status: ⚠️ Human Review Required
-
-Confidence Score: 0%
-
-Reasoning: "Possible Duplicate Submission Detected."
-
-Action: Do NOT teach. This is a safety stop.
+### 🛑 Scenario 6: Duplicate Detection (Safety Layer)
+*   **Goal:** Ensure the AI blocks duplicate submissions.
+*   **Input:** Click `INV-B-004` (Parts AG).
+*   **Status:** ⚠️ Human Review Required
+*   **Confidence Score:** 0%
+*   **Reasoning:** "Possible Duplicate Submission Detected."
+*   **Action:** **Do NOT teach.** This is a safety stop.
 
 ---
 
