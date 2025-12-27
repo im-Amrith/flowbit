@@ -72,37 +72,37 @@
     "failureCount": 0
   },
   {
-    "id": "1766780563185",
+    "id": "1766810768166",
     "vendorName": "Supplier GmbH",
     "memoryType": "field-mapping",
     "key": "Leistungsdatum",
     "value": "serviceDate",
-    "confidence": 0.75,
-    "lastUsed": "2025-12-26T20:22:53.644Z",
-    "usageCount": 2,
-    "successCount": 2,
-    "failureCount": 0
-  },
-  {
-    "id": "1766780649878",
-    "vendorName": "Parts AG",
-    "memoryType": "correction-pattern",
-    "key": "vat-inclusive",
-    "value": true,
     "confidence": 0.6,
-    "lastUsed": "2025-12-26T20:24:09.878Z",
+    "lastUsed": "2025-12-27T04:46:08.166Z",
     "usageCount": 1,
     "successCount": 1,
     "failureCount": 0
   },
   {
-    "id": "1766780751303",
+    "id": "1766810774723",
+    "vendorName": "Parts AG",
+    "memoryType": "correction-pattern",
+    "key": "vat-inclusive",
+    "value": true,
+    "confidence": 0.6,
+    "lastUsed": "2025-12-27T04:46:14.723Z",
+    "usageCount": 1,
+    "successCount": 1,
+    "failureCount": 0
+  },
+  {
+    "id": "1766810779253",
     "vendorName": "Freight & Co",
     "memoryType": "field-mapping",
     "key": "Seefracht",
     "value": "SKU-FREIGHT",
     "confidence": 0.6,
-    "lastUsed": "2025-12-26T20:25:51.303Z",
+    "lastUsed": "2025-12-27T04:46:19.253Z",
     "usageCount": 1,
     "successCount": 1,
     "failureCount": 0
