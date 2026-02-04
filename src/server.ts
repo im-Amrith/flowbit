@@ -13,7 +13,7 @@ app.use(express.json());
 const memory = new MemoryManager();
 const processor = new InvoiceProcessor(memory);
 
-const invoicesRaw = fs.readFileSync(path.join(__dirname, '../data/invoices.json'), 'utf-8');
+const invoicesRaw = fs.readFileSync(path.join(process.cwd(), 'data/invoices.json'), 'utf-8');
 const invoices: Invoice[] = JSON.parse(invoicesRaw);
 
 app.get('/api/invoices', (req, res) => {
@@ -58,7 +58,7 @@ app.post('/api/resolve/:id', (req, res) => {
 });
 
 app.get('/api/memory', (req, res) => {
-    const memPath = path.join(__dirname, '../data/memory_store.json');
+    const memPath = path.join(process.cwd(), 'data/memory_store.json');
     if (fs.existsSync(memPath)) {
         const data = fs.readFileSync(memPath, 'utf-8');
         res.json(JSON.parse(data));
@@ -72,7 +72,11 @@ app.post('/api/reset', (req, res) => {
     res.json({ success: true, message: "Memory wiped." });
 });
 
-const PORT = 3001;
-app.listen(PORT, () => {
-    console.log(`API Server running at http://localhost:${PORT}`);
-});
+export default app;
+
+if (require.main === module) {
+    const PORT = 3001;
+    app.listen(PORT, () => {
+        console.log(`API Server running at http://localhost:${PORT}`);
+    });
+}

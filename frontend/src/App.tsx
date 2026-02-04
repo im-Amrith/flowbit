@@ -85,7 +85,7 @@ function App() {
 
   const fetchInvoices = async () => {
     try {
-      const res = await axios.get('http://localhost:3001/api/invoices');
+      const res = await axios.get('/api/invoices');
       setInvoices(res.data);
     } catch (e) {
       console.error("Error connecting to backend");
@@ -94,7 +94,7 @@ function App() {
 
   const fetchMemories = async () => {
     try {
-      const res = await axios.get('http://localhost:3001/api/memory');
+      const res = await axios.get('/api/memory');
       setMemories(res.data);
     } catch (e) { console.error(e); }
   };
@@ -109,7 +109,7 @@ function App() {
     setTimeout(async () => {
       try {
         // Use invoiceId here!
-        const res = await axios.post(`http://localhost:3001/api/process/${inv.invoiceId}`);
+        const res = await axios.post(`/api/process/${inv.invoiceId}`);
         setResult(res.data);
       } catch (e) { console.error(e); }
       setLoading(false);
@@ -121,7 +121,7 @@ function App() {
     const type = correctionKey === 'vat-inclusive' ? 'correction-pattern' : 'field-mapping';
     const val = correctionKey === 'vat-inclusive' ? true : correctionValue;
 
-    await axios.post('http://localhost:3001/api/learn', {
+    await axios.post('/api/learn', {
       vendorName: selectedInvoice.vendor,
       type, key: correctionKey, value: val
     });
@@ -133,7 +133,7 @@ function App() {
 
   const handleResolve = async (status: 'approved' | 'rejected') => {
     if (!selectedInvoice || !result) return;
-    await axios.post(`http://localhost:3001/api/resolve/${selectedInvoice.invoiceId}`, {
+    await axios.post(`/api/resolve/${selectedInvoice.invoiceId}`, {
       vendorName: selectedInvoice.vendor,
       status,
       appliedMemoryIds: result.appliedMemoryIds
@@ -146,7 +146,7 @@ function App() {
 
   const handleReset = async () => {
     if(!confirm("Are you sure you want to wipe all AI memory?")) return;
-    await axios.post('http://localhost:3001/api/reset');
+    await axios.post('/api/reset');
     fetchMemories();
     alert("Memory Wiped.");
     setResult(null);
