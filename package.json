@@ -2,10 +2,10 @@
   "name": "flowbit-agent",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "demo": "ts-node src/index.ts"
+    "demo": "ts-node src/index.ts",
+    "build": "cd frontend && npm install && npm run build"
   },
   "keywords": [],
   "author": "",
